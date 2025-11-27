@@ -33,6 +33,9 @@ export default function Navbar() {
           <Link href="/about" className="text-foreground hover:text-primary transition-colors">
             About
           </Link>
+          <Link href="/doctor/login" className="text-foreground hover:text-primary transition-colors">
+            Doctor Portal
+          </Link>
         </div>
 
         {/* Mobile Menu Button */}

@@ -5,8 +5,8 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -17,4 +17,12 @@ model Doctorlogin {
   username  String   @unique
   password  String
   createdAt DateTime @default(now())
+}
+
+model Doctor {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  name         String?
+  profileImage String?
+  createdAt    DateTime @default(now())
 }

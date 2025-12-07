@@ -1,58 +1,47 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { supabase } from "@/supabaseClient"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { mockDoctorProfiles } from "@/lib/mock-data"
 import { LogOut, FileText, User, Clock } from "lucide-react"
+import Link from "next/link"   // ✅ FIXED
 
 export default function DoctorDashboard() {
   const router = useRouter()
-  const [doctor, setDoctor] = useState<(typeof mockDoctorProfiles)[0] | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    const doctorEmail = localStorage.getItem("doctorEmail")
-    if (!doctorEmail) {
-      router.push("/doctor/login")
-      return
+    async function checkSession() {
+      const { data } = await supabase.auth.getSession()
+
+      if (!data.session) {
+        router.push("/doctor/login")
+        return
+      }
+
+      setUser(data.session.user)
+      setLoading(false)
     }
 
-    // Mock: Find doctor by email
-    const foundDoctor = mockDoctorProfiles.find((d) => d.email === doctorEmail)
-    if (foundDoctor) {
-      setDoctor(foundDoctor)
-    }
-    setIsLoading(false)
+    checkSession()
   }, [router])
 
-  const handleLogout = () => {
-    localStorage.removeItem("doctorEmail")
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
     router.push("/doctor/login")
   }
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
           <p className="text-muted-foreground">Loading...</p>
-        </div>
-        <Footer />
-      </div>
-    )
-  }
-
-  if (!doctor) {
-    return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-muted-foreground">Doctor not found</p>
         </div>
         <Footer />
       </div>
@@ -65,52 +54,56 @@ export default function DoctorDashboard() {
 
       <section className="flex-1 px-4 py-8 md:py-12">
         <div className="max-w-6xl mx-auto">
-          {/* Header */}
+
+          {/* HEADER */}
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">Welcome, {doctor.name}</h1>
-              <p className="text-muted-foreground">
-                {doctor.specialization} • {doctor.hospital}
-              </p>
+              <h1 className="text-3xl font-bold text-foreground mb-2">
+                Welcome, Doctor
+              </h1>
+              <p className="text-muted-foreground">{user.email}</p>
             </div>
+
             <Button variant="outline" onClick={handleLogout} className="gap-2 bg-transparent">
               <LogOut className="w-4 h-4" />
               Logout
             </Button>
           </div>
 
-          {/* Quick Stats */}
+          {/* QUICK STATS */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <Card className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Total Reports</p>
-                  <p className="text-2xl font-bold text-foreground">{doctor.reports.length}</p>
+                  <p className="text-2xl font-bold text-foreground">12</p>
                 </div>
                 <FileText className="w-8 h-8 text-primary/50" />
               </div>
             </Card>
+
             <Card className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Rating</p>
-                  <p className="text-2xl font-bold text-foreground">{doctor.rating}/5.0</p>
+                  <p className="text-2xl font-bold text-foreground">4.9</p>
                 </div>
                 <User className="w-8 h-8 text-primary/50" />
               </div>
             </Card>
+
             <Card className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Experience</p>
-                  <p className="text-2xl font-bold text-foreground">{doctor.experience} years</p>
+                  <p className="text-2xl font-bold text-foreground">6 years</p>
                 </div>
                 <Clock className="w-8 h-8 text-primary/50" />
               </div>
             </Card>
           </div>
 
-          {/* Navigation Cards */}
+          {/* NAVIGATION */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Link href="/doctor/profile">
               <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer h-full">
@@ -136,6 +129,7 @@ export default function DoctorDashboard() {
               </Card>
             </Link>
           </div>
+
         </div>
       </section>
 
@@ -143,3 +137,6 @@ export default function DoctorDashboard() {
     </div>
   )
 }
+
+
+

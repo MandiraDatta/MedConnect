@@ -1,16 +1,16 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
+
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Heart } from "lucide-react"
+import { supabase } from "@/supabaseClient"
 
 export default function DoctorLogin() {
   const router = useRouter()
@@ -18,19 +18,42 @@ export default function DoctorLogin() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Email/password login
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
 
-    // Mock authentication - in production, this would call an API
-    if (email && password) {
-      // Store doctor session (in production, use proper auth)
-      localStorage.setItem("doctorEmail", email)
-      router.push("/doctor/dashboard")
-    } else {
+    if (!email || !password) {
       setError("Please enter both email and password")
+      return
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      setError(error.message)
+    } else if (data.session) {
+      router.push("/doctor/dashboard")
     }
   }
+
+  // Google login
+ const handleGoogleLogin = async () => {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: window.location.origin + "/doctor/callback",
+      queryParams: { prompt: "select_account" }, // force Google account chooser
+    },
+  });
+
+  if (error) console.error("Google login error:", error.message);
+  else window.location.assign(data.url);
+};
+
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -48,7 +71,7 @@ export default function DoctorLogin() {
               <p className="text-muted-foreground">Sign in to manage your profile and reports</p>
             </div>
 
-            {/* Form */}
+            {/* Email/Password Form */}
             <form onSubmit={handleLogin} className="space-y-4">
               {error && (
                 <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-2 rounded-lg text-sm">
@@ -83,6 +106,23 @@ export default function DoctorLogin() {
               </Button>
             </form>
 
+            {/* OR Separator */}
+            <div className="flex items-center my-4">
+              <hr className="flex-1 border-t border-muted mr-2" />
+              <span className="text-xs text-muted-foreground">or</span>
+              <hr className="flex-1 border-t border-muted ml-2" />
+            </div>
+
+            {/* Google Login */}
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleGoogleLogin}
+            >
+              Sign in with Google
+            </Button>
+
             {/* Demo Credentials */}
             <div className="mt-6 p-4 bg-muted rounded-lg">
               <p className="text-sm font-medium text-foreground mb-2">Demo Credentials:</p>
@@ -105,3 +145,5 @@ export default function DoctorLogin() {
     </div>
   )
 }
+
+

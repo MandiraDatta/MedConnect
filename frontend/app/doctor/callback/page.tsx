@@ -1,34 +1,50 @@
-// OAuth callback page
 "use client"
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/supabaseClient";
 
-export default function OAuthCallback() {
+export default function DoctorCallback() {
   const router = useRouter();
 
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
+    const handleOAuthCallback = async () => {
+      // Get the logged-in user from Supabase
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
 
       if (error) {
-        console.error("Error getting session:", error.message);
+        console.error("Error fetching user after OAuth:", error);
         return;
       }
 
-      if (session?.user) {
-        console.log("Logged in user:", session.user);
+      if (user) {
+        // Sync with your backend
+        try {
+          await fetch("http://localhost:3004/users/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: user.email,
+              name: user.user_metadata?.full_name || "",
+              supabaseId: user.id,
+            }),
+          });
+          console.log("User synced with backend!");
+        } catch (err) {
+          console.error("Error syncing with backend:", err);
+        }
+
         router.push("/doctor/dashboard");
-      } else {
-        console.log("No session, redirecting to login");
-        router.push("/doctor/login");
       }
     };
 
-    checkSession();
+    handleOAuthCallback();
   }, [router]);
 
-  return <div className="text-center mt-20">Logging in with Google...</div>;
+  return <div>Logging in…</div>;
 }
+
 

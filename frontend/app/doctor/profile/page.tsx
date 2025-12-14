@@ -7,31 +7,50 @@ import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
-import { mockDoctorProfiles } from "@/lib/mock-data"
 import { ArrowLeft, Save } from "lucide-react"
 import Link from "next/link"
+import { supabase } from "@/supabaseClient"
 
 export default function DoctorProfile() {
   const router = useRouter()
-  const [doctor, setDoctor] = useState<(typeof mockDoctorProfiles)[0] | null>(null)
+  const [doctor, setDoctor] = useState<any>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [supabaseId, setSupabaseId] = useState<string | null>(null)
+
+  const BACKEND_URL = "http://localhost:3004"
 
   useEffect(() => {
-    const doctorEmail = localStorage.getItem("doctorEmail")
-    if (!doctorEmail) {
-      router.push("/doctor/login")
-      return
+    const fetchDoctorData = async () => {
+      // Get Supabase session
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session) {
+        router.push("/doctor/login")
+        return
+      }
+
+      setSupabaseId(session.user.id)
+
+      // Fetch doctor data from backend
+      try {
+        const response = await fetch(`${BACKEND_URL}/doctor-login/me/${session.user.id}`)
+        const doctorData = await response.json()
+
+        if (!doctorData.error) {
+          setDoctor(doctorData)
+          setFormData(doctorData)
+        }
+      } catch (error) {
+        console.error("Error fetching doctor data:", error)
+      }
+
+      setIsLoading(false)
     }
 
-    const foundDoctor = mockDoctorProfiles.find((d) => d.email === doctorEmail)
-    if (foundDoctor) {
-      setDoctor(foundDoctor)
-      setFormData(foundDoctor)
-    }
-    setIsLoading(false)
-  }, [router])
+    fetchDoctorData()
+  }, [router, supabase])
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev: any) => ({
@@ -40,9 +59,29 @@ export default function DoctorProfile() {
     }))
   }
 
-  const handleSave = () => {
-    setIsEditing(false)
-    // In production, this would call an API to save changes
+  const handleSave = async () => {
+    if (!supabaseId) return
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/doctor-login/me/${supabaseId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          phone: formData.phone,
+          profileImage: formData.profileImage,
+        }),
+      })
+
+      const updatedDoctor = await response.json()
+      if (!updatedDoctor.error) {
+        setDoctor(updatedDoctor)
+        setFormData(updatedDoctor)
+        setIsEditing(false)
+      }
+    } catch (error) {
+      console.error("Error saving doctor data:", error)
+    }
   }
 
   if (isLoading || !doctor || !formData) {
@@ -86,7 +125,7 @@ export default function DoctorProfile() {
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">Full Name</label>
                     <Input
-                      value={formData.name}
+                      value={formData.name || ""}
                       onChange={(e) => handleInputChange("name", e.target.value)}
                       disabled={!isEditing}
                       className="w-full"
@@ -95,26 +134,25 @@ export default function DoctorProfile() {
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">Email</label>
                     <Input
-                      value={formData.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
-                      disabled={!isEditing}
+                      value={formData.email || ""}
+                      disabled={true}
                       className="w-full"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">Phone</label>
                     <Input
-                      value={formData.phone}
+                      value={formData.phone || ""}
                       onChange={(e) => handleInputChange("phone", e.target.value)}
                       disabled={!isEditing}
                       className="w-full"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">License Number</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">Profile Image URL</label>
                     <Input
-                      value={formData.licenseNumber}
-                      onChange={(e) => handleInputChange("licenseNumber", e.target.value)}
+                      value={formData.profileImage || ""}
+                      onChange={(e) => handleInputChange("profileImage", e.target.value)}
                       disabled={!isEditing}
                       className="w-full"
                     />
@@ -122,74 +160,13 @@ export default function DoctorProfile() {
                 </div>
               </div>
 
-              {/* Professional Information */}
+              {/* Account Information */}
               <div>
-                <h2 className="text-xl font-semibold text-foreground mb-4">Professional Information</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Specialization</label>
-                    <Input
-                      value={formData.specialization}
-                      onChange={(e) => handleInputChange("specialization", e.target.value)}
-                      disabled={!isEditing}
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Hospital</label>
-                    <Input
-                      value={formData.hospital}
-                      onChange={(e) => handleInputChange("hospital", e.target.value)}
-                      disabled={!isEditing}
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Years of Experience</label>
-                    <Input
-                      type="number"
-                      value={formData.experience}
-                      onChange={(e) => handleInputChange("experience", e.target.value)}
-                      disabled={!isEditing}
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Rating</label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={formData.rating}
-                      onChange={(e) => handleInputChange("rating", e.target.value)}
-                      disabled={!isEditing}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Bio */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Bio</label>
-                <textarea
-                  value={formData.bio}
-                  onChange={(e) => handleInputChange("bio", e.target.value)}
-                  disabled={!isEditing}
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground disabled:opacity-50"
-                  rows={4}
-                />
-              </div>
-
-              {/* Qualifications */}
-              <div>
-                <h2 className="text-xl font-semibold text-foreground mb-4">Qualifications</h2>
-                <div className="space-y-2">
-                  {formData.qualifications.map((qual: string, idx: number) => (
-                    <div key={idx} className="flex items-center gap-2 text-foreground">
-                      <span className="text-primary">•</span>
-                      <span>{qual}</span>
-                    </div>
-                  ))}
+                <h2 className="text-xl font-semibold text-foreground mb-4">Account Information</h2>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <p><strong>Created:</strong> {formData.createdAt ? new Date(formData.createdAt).toLocaleDateString() : "N/A"}</p>
+                  <p><strong>Last Login:</strong> {formData.lastLoginAt ? new Date(formData.lastLoginAt).toLocaleDateString() : "Never"}</p>
+                  <p><strong>Supabase ID:</strong> {formData.supabaseId || "N/A"}</p>
                 </div>
               </div>
 

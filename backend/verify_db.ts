@@ -23,7 +23,7 @@ async function main() {
     await prisma.$connect();
     console.log('Connected to database');
 
-    const user = await prisma.user.create({
+    const user = await prisma.doctorLogin.create({
       data: {
         email: `test_${Date.now()}@example.com`,
         password: 'password123',

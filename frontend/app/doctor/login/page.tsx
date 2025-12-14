@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 
@@ -11,40 +11,38 @@ import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Heart } from "lucide-react"
 import { supabase } from "@/supabaseClient"
+import { BACKEND_URL } from "@/lib/config";
 
 export default function DoctorLogin() {
   const router = useRouter()
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
-  // ⭐ FIX — Correct backend URL
-  const BACKEND_URL = "http://localhost:3004";
+  //const BACKEND_URL = "http://localhost:3004"
 
-  // ⭐ FIX — Sync function correctly placed ABOVE handleLogin
-  const syncUserWithBackend = async (user: any) => {
-    console.log("SYNC FUNCTION TRIGGERED → user:", user);
-
-    try {
-      const response = await fetch(`${BACKEND_URL}/users/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: user.email,
-          name: user.user_metadata?.full_name || "",
-          supabaseId: user.id,
-        }),
-      });
-
-      const result = await response.json();
-      console.log("Sync Response:", result);
-    } catch (err) {
-      console.error("Error syncing user:", err);
+  // ---------------------------------------
+  // 🔥 Redirect if already logged in
+  // ---------------------------------------
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        router.replace("/doctor/dashboard")
+      }
     }
-  };
+    checkSession()
+  }, [router])
 
-  // ⭐ FIX — handleLogin
+  // ---------------------------------------
+  // 🔥 Sync Google user with backend
+  // ---------------------------------------
+
+  // ---------------------------------------
+  // 🔥 EMAIL / PASSWORD LOGIN (FIXED)
+  // ---------------------------------------
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
@@ -56,50 +54,56 @@ export default function DoctorLogin() {
       return
     }
 
-    // ⭐ FIX — Actual supabase login
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      // 🔥 CHANGED: signup → login
+      const res = await fetch(`${BACKEND_URL}/doctor-login/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      })
 
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      return;
-    }
+      const data = await res.json()
 
-    if (data.user) {
-      console.log("Supabase login success:", data.user);
+      if (!res.ok) {
+        setError(data.message || "Login failed")
+        setLoading(false)
+        return
+      }
 
-      // ⭐ FIX — THE MOST IMPORTANT LINES
-      await syncUserWithBackend(data.user);
-      console.log("SYNC DONE → Redirecting…");
-
-      router.push("/doctor/dashboard");
+      // 🔥 Login successful
+      router.replace("/doctor/dashboard")
+    } catch {
+      setError("Network error. Please try again.")
     }
 
     setLoading(false)
-  };
-
-
- const handleGoogleLogin = async () => {
-  setLoading(true);
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: window.location.origin + "/doctor/callback",
-      queryParams: { prompt: "select_account" },
-    },
-  });
-
-  if (error) {
-    console.error("Google login error:", error.message);
-    setLoading(false);
-  } else {
-    // No need to manually sync here; callback will handle it
-    window.location.assign(data.url);
   }
-};
+
+  // ---------------------------------------
+  // 🔥 GOOGLE LOGIN (UNCHANGED)
+  // ---------------------------------------
+  const handleGoogleLogin = async () => {
+    setLoading(true)
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin + "/doctor/callback",
+        queryParams: { prompt: "select_account" },
+      },
+    })
+
+    if (error) {
+      console.error("Google login error:", error.message)
+      setLoading(false)
+    } else {
+      window.location.assign(data.url)
+    }
+  }
+
+  // ---------------------------------------
+  // UI (UNCHANGED)
+  // ---------------------------------------
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
@@ -111,8 +115,12 @@ export default function DoctorLogin() {
               <div className="bg-primary p-3 rounded-lg w-fit mx-auto mb-4">
                 <Heart className="w-6 h-6 text-primary-foreground" />
               </div>
-              <h1 className="text-2xl font-bold text-foreground mb-2">Doctor Portal</h1>
-              <p className="text-muted-foreground">Sign in to manage your profile and reports</p>
+              <h1 className="text-2xl font-bold mb-2">
+                Doctor Portal
+              </h1>
+              <p className="text-muted-foreground">
+                Sign in to manage your profile and reports
+              </p>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-4">
@@ -123,47 +131,48 @@ export default function DoctorLogin() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Email</label>
+                <label className="block text-sm font-medium mb-2">
+                  Email
+                </label>
                 <Input
                   type="email"
-                  placeholder="your.email@medconnect.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Password</label>
+                <label className="block text-sm font-medium mb-2">
+                  Password
+                </label>
                 <Input
                   type="password"
-                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full"
                 />
               </div>
 
-              <Button type="submit" className="w-full">
-                Sign In
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
 
             <div className="flex items-center my-4">
-              <hr className="flex-1 border-t border-muted mr-2" />
-              <span className="text-xs text-muted-foreground">or</span>
-              <hr className="flex-1 border-t border-muted ml-2" />
+              <hr className="flex-1" />
+              <span className="mx-2 text-xs text-muted-foreground">
+                or
+              </span>
+              <hr className="flex-1" />
             </div>
 
-            <Button type="button" variant="outline" className="w-full" onClick={handleGoogleLogin}>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleGoogleLogin}
+            >
               Sign in with Google
             </Button>
-
-            <div className="mt-6 p-4 bg-muted rounded-lg">
-              <p className="text-sm font-medium text-foreground mb-2">Demo Credentials:</p>
-              <p className="text-xs text-muted-foreground">Email: sarah.johnson@medconnect.com</p>
-              <p className="text-xs text-muted-foreground">Password: demo123</p>
-            </div>
 
             <p className="text-center text-sm text-muted-foreground mt-6">
               Not a doctor?{" "}
@@ -179,6 +188,7 @@ export default function DoctorLogin() {
     </div>
   )
 }
+
 
 
 

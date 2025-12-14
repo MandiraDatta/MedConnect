@@ -8,40 +8,60 @@ import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { LogOut, FileText, User, Clock } from "lucide-react"
-import Link from "next/link"   // ✅ FIXED
+import Link from "next/link"
 
 export default function DoctorDashboard() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
+  const [doctor, setDoctor] = useState<any>(null)
+
+  const BACKEND_URL = "http://localhost:3004"
 
   useEffect(() => {
-    async function checkSession() {
-      const { data } = await supabase.auth.getSession()
+    // 🔥 CHANGE #1 — wrap async logic safely
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
 
-      if (!data.session) {
-        router.push("/doctor/login")
+      // 🔥 CHANGE #2 — use replace instead of push
+      if (!session) {
+        router.replace("/doctor/login")
         return
       }
 
-      setUser(data.session.user)
+      // 🔥 CHANGE #3 — store user safely
+      setUser(session.user)
+
+      // 🔥 NEW — Fetch doctor data from backend
+      try {
+        const response = await fetch(`${BACKEND_URL}/doctor-login/me/${session.user.id}`)
+        const doctorData = await response.json()
+        if (!doctorData.error) {
+          setDoctor(doctorData)
+        }
+      } catch (error) {
+        console.error("Error fetching doctor data:", error)
+      }
+
       setLoading(false)
     }
 
     checkSession()
   }, [router])
 
+  // 🔥 CHANGE #4 — safer logout handling
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    router.push("/doctor/login")
+    router.replace("/doctor/login")
   }
 
-  if (loading) {
+  // 🔥 CHANGE #5 — avoid rendering UI before auth check
+  if (loading || !user) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">Checking authentication...</p>
         </div>
         <Footer />
       </div>
@@ -58,13 +78,22 @@ export default function DoctorDashboard() {
           {/* HEADER */}
           <div className="flex items-center justify-between mb-8">
             <div>
+              {/* 🔥 CHANGE #6 — dynamic greeting */}
               <h1 className="text-3xl font-bold text-foreground mb-2">
-                Welcome, Doctor
+                Welcome, {doctor?.name || "Doctor"} 👋
               </h1>
-              <p className="text-muted-foreground">{user.email}</p>
+
+              {/* 🔥 CHANGE #7 — safe optional access */}
+              <p className="text-muted-foreground">
+                {user?.email || doctor?.email}
+              </p>
             </div>
 
-            <Button variant="outline" onClick={handleLogout} className="gap-2 bg-transparent">
+            <Button
+              variant="outline"
+              onClick={handleLogout}
+              className="gap-2 bg-transparent"
+            >
               <LogOut className="w-4 h-4" />
               Logout
             </Button>
@@ -110,7 +139,9 @@ export default function DoctorDashboard() {
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-foreground mb-2">My Profile</h3>
-                    <p className="text-sm text-muted-foreground">View and edit your professional profile</p>
+                    <p className="text-sm text-muted-foreground">
+                      View and edit your professional profile
+                    </p>
                   </div>
                   <User className="w-6 h-6 text-primary" />
                 </div>
@@ -122,7 +153,9 @@ export default function DoctorDashboard() {
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-foreground mb-2">My Reports</h3>
-                    <p className="text-sm text-muted-foreground">View and manage patient reports</p>
+                    <p className="text-sm text-muted-foreground">
+                      View and manage patient reports
+                    </p>
                   </div>
                   <FileText className="w-6 h-6 text-primary" />
                 </div>

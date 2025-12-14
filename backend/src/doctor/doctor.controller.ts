@@ -6,7 +6,7 @@ export class DoctorController {
   constructor(private doctorService: DoctorService) {}
 
   @Post('sync')
-  syncDoctor(@Body() body: { loginId: number; email: string; name?: string }) {
+  syncDoctor(@Body() body: { email: string; name?: string }) {
     return this.doctorService.syncDoctor(body);
   }
 }

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/supabaseClient";
+import { BACKEND_URL } from "@/lib/config";
 
 export default function DoctorCallback() {
   const router = useRouter();
@@ -23,16 +24,18 @@ export default function DoctorCallback() {
       if (user) {
         // Sync with your backend
         try {
-          await fetch("http://localhost:3004/users/register", {
+         await fetch(`${BACKEND_URL}/doctor-login/register`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               email: user.email,
-              name: user.user_metadata?.full_name || "",
+              name: user.user_metadata?.full_name || user.user_metadata?.name || "",
               supabaseId: user.id,
+              profileImage: user.user_metadata?.avatar_url || user.user_metadata?.picture || "",
+              phone: user.user_metadata?.phone || user.phone || "",
             }),
           });
-          console.log("User synced with backend!");
+          console.log("Doctor synced with backend!");
         } catch (err) {
           console.error("Error syncing with backend:", err);
         }

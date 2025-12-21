@@ -15,39 +15,78 @@ export default function DoctorDashboard() {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [doctor, setDoctor] = useState<any>(null)
+  const [totalReports, setTotalReports] = useState(0);
+  const [rating, setRating] = useState<number | null>(null);
+  const [reports, setReports] = useState([]);
+
 
   const BACKEND_URL = "http://localhost:3004"
 
-  useEffect(() => {
-    // 🔥 CHANGE #1 — wrap async logic safely
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+ useEffect(() => {
+  const checkSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
 
-      // 🔥 CHANGE #2 — use replace instead of push
-      if (!session) {
-        router.replace("/doctor/login")
-        return
-      }
-
-      // 🔥 CHANGE #3 — store user safely
-      setUser(session.user)
-
-      // 🔥 NEW — Fetch doctor data from backend
-      try {
-        const response = await fetch(`${BACKEND_URL}/doctor-login/me/${session.user.id}`)
-        const doctorData = await response.json()
-        if (!doctorData.error) {
-          setDoctor(doctorData)
-        }
-      } catch (error) {
-        console.error("Error fetching doctor data:", error)
-      }
-
-      setLoading(false)
+    if (!session) {
+      router.replace("/doctor/login")
+      return
     }
 
-    checkSession()
-  }, [router])
+    setUser(session.user)
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/doctor/sync`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: session.user.email,
+          name: session.user.user_metadata?.full_name,
+        }),
+      })
+
+      const doctorData = await response.json()
+      setDoctor(doctorData)
+    } catch (error) {
+      console.error("Error syncing doctor:", error)
+    }
+
+    setLoading(false)
+  }
+
+  checkSession()
+}, [router])
+
+useEffect(() => {
+    if (!user) return   // ⛔ wait until login is confirmed
+
+    fetch(`${BACKEND_URL}/report/count`, {
+      credentials: "include",
+    })
+      .then(res => res.json())
+      .then(data => {
+        // depends on backend response shape
+        setTotalReports(
+          typeof data === "number" ? data : data.count
+        )
+      })
+      .catch(err => console.error("Failed to fetch report count", err))
+  }, [user])
+
+  useEffect(() => {
+  fetch("http://localhost:3004/doctor/rating", {
+    credentials: "include",
+  })
+    .then(res => res.json())
+    .then(data => setRating(data.rating));
+}, []);
+
+useEffect(() => {
+  fetch("http://localhost:3004/report", {
+    credentials: "include",
+  })
+    .then(res => res.json())
+    .then(setReports);
+}, []);
+
 
   // 🔥 CHANGE #4 — safer logout handling
   const handleLogout = async () => {
@@ -80,12 +119,12 @@ export default function DoctorDashboard() {
             <div>
               {/* 🔥 CHANGE #6 — dynamic greeting */}
               <h1 className="text-3xl font-bold text-foreground mb-2">
-                Welcome, {doctor?.name || "Doctor"} 👋
+                Welcome, {doctor.name}👋
               </h1>
 
               {/* 🔥 CHANGE #7 — safe optional access */}
               <p className="text-muted-foreground">
-                {user?.email || doctor?.email}
+                {doctor.email}
               </p>
             </div>
 
@@ -105,7 +144,7 @@ export default function DoctorDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Total Reports</p>
-                  <p className="text-2xl font-bold text-foreground">12</p>
+                  <p className="text-2xl font-bold text-foreground">{totalReports}</p>
                 </div>
                 <FileText className="w-8 h-8 text-primary/50" />
               </div>
@@ -115,7 +154,7 @@ export default function DoctorDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Rating</p>
-                  <p className="text-2xl font-bold text-foreground">4.9</p>
+                  <p className="text-2xl font-bold text-foreground">{rating ?? "No ratings yet"}</p>
                 </div>
                 <User className="w-8 h-8 text-primary/50" />
               </div>
@@ -125,7 +164,7 @@ export default function DoctorDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Experience</p>
-                  <p className="text-2xl font-bold text-foreground">6 years</p>
+                  <p className="text-2xl font-bold text-foreground">{doctor.experience ?? 0} years</p>
                 </div>
                 <Clock className="w-8 h-8 text-primary/50" />
               </div>

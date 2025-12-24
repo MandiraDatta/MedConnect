@@ -8,6 +8,7 @@ import FilterPanel from "@/components/filter-panel"
 import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
 import { mockHospitals } from "@/lib/mock-data"
+import MapView from "@/components/maps/mapview";
 
 export default function DirectoryPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -46,6 +47,7 @@ export default function DirectoryPage() {
             <p className="text-muted-foreground">Find and book appointments at nearby hospitals</p>
           </div>
 
+
           {/* Search Bar */}
           <div className="mb-8">
             <div className="relative">
@@ -59,6 +61,13 @@ export default function DirectoryPage() {
               />
             </div>
           </div>
+
+
+{/* Map Section */}
+          <div className="mb-8 rounded-xl overflow-hidden border">
+            <MapView />
+          </div>
+
 
           {/* Filters and Results */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

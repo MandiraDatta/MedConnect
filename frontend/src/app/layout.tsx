@@ -1,26 +1,35 @@
-import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 
-const _geist = Geist({ subsets: ["latin"] })
-const _geistMono = Geist_Mono({ subsets: ["latin"] })
+// Load fonts with CSS variables
+const geist = Geist({
+  subsets: ["latin"],
+  variable: "--font-geist",
+})
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
+})
 
 export const metadata: Metadata = {
   title: "MedConnect - Find Doctors & Book Appointments",
   description:
     "Smart Hospital & Doctor Finder - Find nearby hospitals, check available doctors, view queue times, and book appointments.",
-  generator: "v0.app",
 }
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
     <html lang="en">
-      <body className={`font-sans antialiased`}>{children}</body>
+      <body className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}>
+        {children}
+      </body>
     </html>
   )
 }
+

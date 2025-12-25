@@ -2,12 +2,13 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Heart } from "lucide-react"
+import { Heart, PhoneCall } from "lucide-react" // 🔴 NEW ICON
 
 export default function Navbar() {
   return (
     <nav className="bg-card border-b border-border sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        
         {/* Logo */}
         <Link
           href="/"
@@ -36,15 +37,34 @@ export default function Navbar() {
           <Link href="/doctor/login" className="text-foreground hover:text-primary transition-colors">
             Doctor Portal
           </Link>
+
+          {/* ================= NEW: EMERGENCY CONTACT ================= */}
+          <a
+            href="tel:108"
+            className="flex items-center gap-2 bg-red-600 text-white px-3 py-1.5 rounded-md hover:bg-red-700 transition"
+          >
+            <PhoneCall className="w-4 h-4" />
+            <span className="font-semibold">Emergency 108</span>
+          </a>
         </div>
 
-        {/* Mobile Menu Button */}
-        <div className="md:hidden">
+        {/* Mobile Emergency + Menu */}
+        <div className="md:hidden flex items-center gap-2">
+          
+          {/* 🔴 NEW: MOBILE EMERGENCY BUTTON */}
+          <a href="tel:108">
+            <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white">
+              <PhoneCall className="w-4 h-4" />
+            </Button>
+          </a>
+
           <Button variant="outline" size="sm">
             Menu
           </Button>
         </div>
+
       </div>
     </nav>
   )
 }
+

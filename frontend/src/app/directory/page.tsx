@@ -8,12 +8,19 @@ import FilterPanel from "@/components/filter-panel"
 import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
 import { mockHospitals } from "@/lib/mock-data"
+import MapView from "@/components/maps/mapview";
+
 
 export default function DirectoryPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedSpecialization, setSelectedSpecialization] = useState("all")
   const [selectedDistance, setSelectedDistance] = useState("all")
   const [selectedAvailability, setSelectedAvailability] = useState("all")
+  const [clinics, setClinics] = useState<google.maps.places.PlaceResult[]>([])
+  const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
+
 
   const filteredHospitals = mockHospitals.filter((hospital) => {
     const matchesSearch =
@@ -34,6 +41,11 @@ export default function DirectoryPage() {
     return matchesSearch && matchesSpecialization && matchesDistance && matchesAvailability
   })
 
+  const handleBooking = (place: google.maps.places.PlaceResult) => {
+    console.log("Booking appointment for:", place.name)
+    // Future implementation: Navigate to booking page or open modal
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
@@ -45,6 +57,7 @@ export default function DirectoryPage() {
             <h1 className="text-3xl font-bold text-foreground mb-2">Hospital Directory</h1>
             <p className="text-muted-foreground">Find and book appointments at nearby hospitals</p>
           </div>
+
 
           {/* Search Bar */}
           <div className="mb-8">
@@ -60,6 +73,13 @@ export default function DirectoryPage() {
             </div>
           </div>
 
+
+          {/* Map Section */}
+          <div className="mb-8 rounded-xl overflow-hidden border">
+            <MapView onClinicsFound={setClinics} />
+          </div>
+
+
           {/* Filters and Results */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Filter Panel */}
@@ -72,17 +92,122 @@ export default function DirectoryPage() {
               setSelectedAvailability={setSelectedAvailability}
             />
 
-            {/* Hospital Cards */}
+            {/* Nearby Clinics / Doctors Cards */}
             <div className="lg:col-span-3">
-              {filteredHospitals.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {filteredHospitals.map((hospital) => (
-                    <HospitalCard key={hospital.id} hospital={hospital} />
+              {clinics.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  {clinics.map((place: google.maps.places.PlaceResult) => (
+                    <div
+                      key={place.place_id}
+                      className="border rounded-lg p-4 shadow-sm hover:shadow-md transition"
+                    >
+                      <h3 className="font-semibold text-lg">{place.name}</h3>
+
+                      {place.vicinity && (
+                        <p className="text-sm text-gray-600 mt-1">{place.vicinity}</p>
+                      )}
+
+                      <div className="flex items-center gap-3 mt-2 text-sm">
+                        {place.rating && <span>⭐ {place.rating}</span>}
+
+                        {place.user_ratings_total && (
+                          <span className="text-gray-500">
+                            ({place.user_ratings_total} reviews)
+                          </span>
+                        )}
+                      </div>
+
+                      {place.opening_hours?.open_now !== undefined && (
+                        <p
+                          className={`mt-2 text-sm font-medium ${place.opening_hours.open_now
+                            ? "text-green-600"
+                            : "text-red-600"
+                            }`}
+                        >
+                          {place.opening_hours.open_now ? "Open now" : "Closed"}
+                        </p>
+                      )}
+
+                      {/* ================= NEW: AVAILABILITY ================= */}
+                      <div className="mt-3 flex items-center gap-2 text-sm font-medium">
+                        <span
+                          className={`px-2 py-1 rounded ${Math.random() > 0.3
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                            }`}
+                        >
+                          {Math.random() > 0.3 ? "Available" : "Full"}
+                        </span>
+                      </div>
+
+                      {/* ================= NEW: QUEUE TIME ================= */}
+                      <div className="mt-2 text-sm text-gray-600">
+                        ⏱ Estimated wait:{" "}
+                        <span className="font-medium text-gray-800">
+                          {Math.floor(Math.random() * 30) + 10} mins
+                        </span>
+                      </div>
+
+                      {/* ================= NEW: QUEUE COUNT ================= */}
+                      <div className="mt-1 text-sm text-gray-600">
+                        🧍 Patients in queue:{" "}
+                        <span className="font-medium text-gray-800">
+                          {Math.floor(Math.random() * 10) + 1}
+                        </span>
+                      </div>
+
+                      {/* Booking Section */}
+                      <div className="mt-4 relative">
+                        <button
+                          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                          onClick={() => setActiveBookingId(prev => prev === place.place_id ? null : (place.place_id || null))}
+                        >
+                          {activeBookingId === place.place_id ? "Cancel" : "Book Appointment"}
+                        </button>
+                        {/* Calendar Popover */}
+                        {activeBookingId === place.place_id && (
+                          <div className="absolute z-20 mt-2 left-0 w-64 bg-white border rounded-lg shadow-lg p-4">
+                            <p className="text-sm font-semibold mb-2">Select Date</p>
+
+                            <input
+                              type="date"
+                              className="w-full border rounded px-2 py-1 mb-3"
+                              value={selectedDate}
+                              onChange={(e) => setSelectedDate(e.target.value)}
+                            />
+
+                            <p className="text-sm font-semibold mb-2">Select Time</p>
+
+                            <input
+                              type="time"
+                              className="w-full border rounded px-2 py-1 mb-4"
+                              value={selectedTime}
+                              onChange={(e) => setSelectedTime(e.target.value)}
+                            />
+
+                            <button
+                              className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
+                              onClick={() => {
+                                alert(
+                                  `Appointment booked at ${place.name} on ${selectedDate} at ${selectedTime}`
+                                );
+                                setActiveBookingId(null);
+                                setSelectedDate("");
+                                setSelectedTime("");
+                              }}
+                              disabled={!selectedDate || !selectedTime}
+                            >
+                              Confirm
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground text-lg">No hospitals found matching your criteria.</p>
+                  <p className="text-muted-foreground text-lg">No clinics found nearby.</p>
                 </div>
               )}
             </div>

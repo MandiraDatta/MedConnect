@@ -17,6 +17,10 @@ export default function DirectoryPage() {
   const [selectedDistance, setSelectedDistance] = useState("all")
   const [selectedAvailability, setSelectedAvailability] = useState("all")
   const [clinics, setClinics] = useState<google.maps.places.PlaceResult[]>([])
+  const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
+
 
   const filteredHospitals = mockHospitals.filter((hospital) => {
     const matchesSearch =
@@ -36,6 +40,11 @@ export default function DirectoryPage() {
 
     return matchesSearch && matchesSpecialization && matchesDistance && matchesAvailability
   })
+
+  const handleBooking = (place: google.maps.places.PlaceResult) => {
+    console.log("Booking appointment for:", place.name)
+    // Future implementation: Navigate to booking page or open modal
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -92,20 +101,14 @@ export default function DirectoryPage() {
                       key={place.place_id}
                       className="border rounded-lg p-4 shadow-sm hover:shadow-md transition"
                     >
-                      <h3 className="font-semibold text-lg">
-                        {place.name}
-                      </h3>
+                      <h3 className="font-semibold text-lg">{place.name}</h3>
 
                       {place.vicinity && (
-                        <p className="text-sm text-gray-600 mt-1">
-                          {place.vicinity}
-                        </p>
+                        <p className="text-sm text-gray-600 mt-1">{place.vicinity}</p>
                       )}
 
                       <div className="flex items-center gap-3 mt-2 text-sm">
-                        {place.rating && (
-                          <span>⭐ {place.rating}</span>
-                        )}
+                        {place.rating && <span>⭐ {place.rating}</span>}
 
                         {place.user_ratings_total && (
                           <span className="text-gray-500">
@@ -117,27 +120,97 @@ export default function DirectoryPage() {
                       {place.opening_hours?.open_now !== undefined && (
                         <p
                           className={`mt-2 text-sm font-medium ${place.opening_hours.open_now
-                              ? "text-green-600"
-                              : "text-red-600"
+                            ? "text-green-600"
+                            : "text-red-600"
                             }`}
                         >
-                          {place.opening_hours.open_now
-                            ? "Open now"
-                            : "Closed"}
+                          {place.opening_hours.open_now ? "Open now" : "Closed"}
                         </p>
                       )}
+
+                      {/* ================= NEW: AVAILABILITY ================= */}
+                      <div className="mt-3 flex items-center gap-2 text-sm font-medium">
+                        <span
+                          className={`px-2 py-1 rounded ${Math.random() > 0.3
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                            }`}
+                        >
+                          {Math.random() > 0.3 ? "Available" : "Full"}
+                        </span>
+                      </div>
+
+                      {/* ================= NEW: QUEUE TIME ================= */}
+                      <div className="mt-2 text-sm text-gray-600">
+                        ⏱ Estimated wait:{" "}
+                        <span className="font-medium text-gray-800">
+                          {Math.floor(Math.random() * 30) + 10} mins
+                        </span>
+                      </div>
+
+                      {/* ================= NEW: QUEUE COUNT ================= */}
+                      <div className="mt-1 text-sm text-gray-600">
+                        🧍 Patients in queue:{" "}
+                        <span className="font-medium text-gray-800">
+                          {Math.floor(Math.random() * 10) + 1}
+                        </span>
+                      </div>
+
+                      {/* Booking Section */}
+                      <div className="mt-4 relative">
+                        <button
+                          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                          onClick={() => setActiveBookingId(prev => prev === place.place_id ? null : (place.place_id || null))}
+                        >
+                          {activeBookingId === place.place_id ? "Cancel" : "Book Appointment"}
+                        </button>
+                        {/* Calendar Popover */}
+                        {activeBookingId === place.place_id && (
+                          <div className="absolute z-20 mt-2 left-0 w-64 bg-white border rounded-lg shadow-lg p-4">
+                            <p className="text-sm font-semibold mb-2">Select Date</p>
+
+                            <input
+                              type="date"
+                              className="w-full border rounded px-2 py-1 mb-3"
+                              value={selectedDate}
+                              onChange={(e) => setSelectedDate(e.target.value)}
+                            />
+
+                            <p className="text-sm font-semibold mb-2">Select Time</p>
+
+                            <input
+                              type="time"
+                              className="w-full border rounded px-2 py-1 mb-4"
+                              value={selectedTime}
+                              onChange={(e) => setSelectedTime(e.target.value)}
+                            />
+
+                            <button
+                              className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
+                              onClick={() => {
+                                alert(
+                                  `Appointment booked at ${place.name} on ${selectedDate} at ${selectedTime}`
+                                );
+                                setActiveBookingId(null);
+                                setSelectedDate("");
+                                setSelectedTime("");
+                              }}
+                              disabled={!selectedDate || !selectedTime}
+                            >
+                              Confirm
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground text-lg">
-                    No clinics found nearby.
-                  </p>
+                  <p className="text-muted-foreground text-lg">No clinics found nearby.</p>
                 </div>
               )}
             </div>
-
           </div>
         </div>
       </main>

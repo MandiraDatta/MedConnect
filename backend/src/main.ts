@@ -1,23 +1,31 @@
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { Logger, ValidationPipe } from '@nestjs/common'; // ✅ import ValidationPipe
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.enableCors();
 
-  // --------------------------
-  // Enable global validation
-  // --------------------------
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true, // remove properties that are not in DTO
-    forbidNonWhitelisted: true, // throw error if extra properties are sent
-    transform: true, // automatically transform payloads to DTO instances
-  }));
+  // ✅ Enable CORS for frontend
+  app.enableCors({
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
 
-  const port = process.env.PORT ?? 3004;
+  // ✅ Global validation (VERY IMPORTANT)
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  const port = process.env.PORT || 3001;
   await app.listen(port);
-  Logger.log(`Application is running on: http://localhost:${port}`);
-}
-bootstrap();
 
+  Logger.log(`🚀 Backend running on http://localhost:${port}`);
+}
+
+bootstrap();

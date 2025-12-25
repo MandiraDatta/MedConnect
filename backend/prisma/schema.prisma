@@ -18,6 +18,8 @@ model Doctor {
   rating          Float?    @default(0)
   specialization  String?
   bio             String?
+   lat             Float?    // ✅ ADDED: latitude
+  lng             Float? 
 
   createdAt       DateTime  @default(now())
 

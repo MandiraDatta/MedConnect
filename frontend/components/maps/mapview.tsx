@@ -16,28 +16,34 @@ const containerStyle = {
 export default function MapView() {
   const [location, setLocation] = useState<LatLng | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser");
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
-      },
-      () => {
-        setError("Location permission denied");
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-      }
-    );
+   navigator.geolocation.getCurrentPosition(
+  (position) => {
+    setLocation({
+      lat: position.coords.latitude,
+      lng: position.coords.longitude,
+    });
+  },
+  (error) => {
+    console.error("Geolocation error:", error);
+    setError(`${error.code}: ${error.message}`);
+  },
+ {
+  enableHighAccuracy: true,
+  timeout: 20000,
+  maximumAge: 0,
+}
+
+);
+
   }, []);
 
   if (error) {

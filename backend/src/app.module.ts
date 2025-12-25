@@ -1,13 +1,11 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { ConfigModule } from '@nestjs/config';
-import { PrismaModule } from './prisma/prisma.module';
-import { AuthModule } from './auth/auth.module';
+import { SymptomModule } from './symptom/symptom.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
-  imports: [ConfigModule.forRoot(), PrismaModule, AuthModule],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    SymptomModule,
+    AiModule,   // ✅ correct place for GeminiService
+  ],
 })
 export class AppModule {}

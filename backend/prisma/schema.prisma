@@ -8,10 +8,11 @@ generator client {
   provider = "prisma-client-js"
   output   = "../node_modules/.prisma/client"
 }
-
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
+
 model Doctorlogin {
   id        Int      @id @default(autoincrement())
   username  String   @unique
@@ -25,4 +26,13 @@ model Doctor {
   name         String?
   profileImage String?
   createdAt    DateTime @default(now())
+}
+
+model SymptomCheck {
+  id         Int      @id @default(autoincrement())
+  symptoms   String
+  condition  String
+  severity   String
+  confidence String
+  createdAt  DateTime @default(now())
 }

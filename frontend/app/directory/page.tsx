@@ -10,11 +10,13 @@ import { Search } from "lucide-react"
 import { mockHospitals } from "@/lib/mock-data"
 import MapView from "@/components/maps/mapview";
 
+
 export default function DirectoryPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedSpecialization, setSelectedSpecialization] = useState("all")
   const [selectedDistance, setSelectedDistance] = useState("all")
   const [selectedAvailability, setSelectedAvailability] = useState("all")
+  const [clinics, setClinics] = useState<google.maps.places.PlaceResult[]>([])
 
   const filteredHospitals = mockHospitals.filter((hospital) => {
     const matchesSearch =
@@ -63,9 +65,9 @@ export default function DirectoryPage() {
           </div>
 
 
-{/* Map Section */}
+          {/* Map Section */}
           <div className="mb-8 rounded-xl overflow-hidden border">
-            <MapView />
+            <MapView onClinicsFound={setClinics} />
           </div>
 
 
@@ -81,20 +83,61 @@ export default function DirectoryPage() {
               setSelectedAvailability={setSelectedAvailability}
             />
 
-            {/* Hospital Cards */}
+            {/* Nearby Clinics / Doctors Cards */}
             <div className="lg:col-span-3">
-              {filteredHospitals.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {filteredHospitals.map((hospital) => (
-                    <HospitalCard key={hospital.id} hospital={hospital} />
+              {clinics.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  {clinics.map((place: google.maps.places.PlaceResult) => (
+                    <div
+                      key={place.place_id}
+                      className="border rounded-lg p-4 shadow-sm hover:shadow-md transition"
+                    >
+                      <h3 className="font-semibold text-lg">
+                        {place.name}
+                      </h3>
+
+                      {place.vicinity && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          {place.vicinity}
+                        </p>
+                      )}
+
+                      <div className="flex items-center gap-3 mt-2 text-sm">
+                        {place.rating && (
+                          <span>⭐ {place.rating}</span>
+                        )}
+
+                        {place.user_ratings_total && (
+                          <span className="text-gray-500">
+                            ({place.user_ratings_total} reviews)
+                          </span>
+                        )}
+                      </div>
+
+                      {place.opening_hours?.open_now !== undefined && (
+                        <p
+                          className={`mt-2 text-sm font-medium ${place.opening_hours.open_now
+                              ? "text-green-600"
+                              : "text-red-600"
+                            }`}
+                        >
+                          {place.opening_hours.open_now
+                            ? "Open now"
+                            : "Closed"}
+                        </p>
+                      )}
+                    </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground text-lg">No hospitals found matching your criteria.</p>
+                  <p className="text-muted-foreground text-lg">
+                    No clinics found nearby.
+                  </p>
                 </div>
               )}
             </div>
+
           </div>
         </div>
       </main>

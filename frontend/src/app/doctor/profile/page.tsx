@@ -12,6 +12,9 @@ import Link from "next/link"
 import { supabase } from "@/supabaseClient"
 import { BACKEND_URL } from "@/lib/config"
 
+// Force dynamic rendering to prevent static generation
+export const dynamic = 'force-dynamic'
+
 export default function DoctorProfile() {
   const router = useRouter()
   const [doctor, setDoctor] = useState<any>(null)

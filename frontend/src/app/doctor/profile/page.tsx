@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card"
 import { ArrowLeft, Save } from "lucide-react"
 import Link from "next/link"
 import { supabase } from "@/supabaseClient"
+import { BACKEND_URL } from "@/lib/config"
 
 export default function DoctorProfile() {
   const router = useRouter()
@@ -18,8 +19,6 @@ export default function DoctorProfile() {
   const [formData, setFormData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [supabaseId, setSupabaseId] = useState<string | null>(null)
-
-  const BACKEND_URL = "http://localhost:3004"
 
   useEffect(() => {
     const fetchDoctorData = async () => {

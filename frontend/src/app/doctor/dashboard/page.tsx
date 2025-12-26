@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { LogOut, FileText, User, Clock } from "lucide-react"
 import Link from "next/link"
+import { BACKEND_URL } from "@/lib/config"
 
 export default function DoctorDashboard() {
   const router = useRouter()
@@ -20,42 +21,42 @@ export default function DoctorDashboard() {
   const [reports, setReports] = useState([]);
 
 
-  const BACKEND_URL = "http://localhost:3004"
 
- useEffect(() => {
-  const checkSession = async () => {
-    const { data: { session } } = await supabase.auth.getSession()
 
-    if (!session) {
-      router.replace("/doctor/login")
-      return
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session) {
+        router.replace("/doctor/login")
+        return
+      }
+
+      setUser(session.user)
+
+      try {
+        const response = await fetch(`${BACKEND_URL}/doctor/sync`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: session.user.email,
+            name: session.user.user_metadata?.full_name,
+          }),
+        })
+
+        const doctorData = await response.json()
+        setDoctor(doctorData)
+      } catch (error) {
+        console.error("Error syncing doctor:", error)
+      }
+
+      setLoading(false)
     }
 
-    setUser(session.user)
+    checkSession()
+  }, [router])
 
-    try {
-      const response = await fetch(`${BACKEND_URL}/doctor/sync`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: session.user.email,
-          name: session.user.user_metadata?.full_name,
-        }),
-      })
-
-      const doctorData = await response.json()
-      setDoctor(doctorData)
-    } catch (error) {
-      console.error("Error syncing doctor:", error)
-    }
-
-    setLoading(false)
-  }
-
-  checkSession()
-}, [router])
-
-useEffect(() => {
+  useEffect(() => {
     if (!user) return   // ⛔ wait until login is confirmed
 
     fetch(`${BACKEND_URL}/report/count`, {
@@ -72,20 +73,24 @@ useEffect(() => {
   }, [user])
 
   useEffect(() => {
-  fetch("http://localhost:3004/doctor/rating", {
-    credentials: "include",
-  })
-    .then(res => res.json())
-    .then(data => setRating(data.rating));
-}, []);
+    if (!user) return
+    fetch(`${BACKEND_URL}/doctor/rating`, {
+      credentials: "include",
+    })
+      .then(res => res.json())
+      .then(data => setRating(data.rating))
+      .catch(err => console.error("Failed to fetch rating", err))
+  }, [user]);
 
-useEffect(() => {
-  fetch("http://localhost:3004/report", {
-    credentials: "include",
-  })
-    .then(res => res.json())
-    .then(setReports);
-}, []);
+  useEffect(() => {
+    if (!user) return
+    fetch(`${BACKEND_URL}/report`, {
+      credentials: "include",
+    })
+      .then(res => res.json())
+      .then(setReports)
+      .catch(err => console.error("Failed to fetch reports", err))
+  }, [user]);
 
 
   // 🔥 CHANGE #4 — safer logout handling

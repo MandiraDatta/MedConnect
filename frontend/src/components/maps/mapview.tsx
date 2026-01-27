@@ -13,6 +13,11 @@ const containerStyle = {
   height: "400px",
 };
 
+const DEFAULT_LOCATION: LatLng = {
+  lat: 28.6139,
+  lng: 77.2090, // Delhi, India
+};
+
 type Doctor = {      // ADDED: Type for doctor data
   id: number;
   name: string;
@@ -25,14 +30,17 @@ interface MapViewProps {
 }
 
 export default function MapView({ onClinicsFound }: MapViewProps) {
-  const [location, setLocation] = useState<LatLng | null>(null);
+  const [location, setLocation] = useState<LatLng>(DEFAULT_LOCATION);
+  const [isLocating, setIsLocating] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [doctors, setDoctors] = useState<Doctor[]>([]); // ADDED: state to store nearby doctors
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
 
 
   useEffect(() => {
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser");
+      setIsLocating(false);
       return;
     }
 
@@ -43,21 +51,28 @@ export default function MapView({ onClinicsFound }: MapViewProps) {
           lng: position.coords.longitude,
         };
         setLocation(userLocation);
-
-        // ADDED: fetch nearby doctors dynamically
-        // fetchNearbyDoctors(userLocation.lat, userLocation.lng);
+        setIsLocating(false);
       },
       (error) => {
         console.error("Geolocation error:", error);
-        setError(`${error.code}: ${error.message}`);
+        // Don't block the UI, just show a message if needed
+        // setError(`${error.code}: ${error.message}`);
+        setIsLocating(false);
       },
       {
-        enableHighAccuracy: true,
-        timeout: 20000,
-        maximumAge: 0,
+        enableHighAccuracy: false, // Changed from true to improve speed/reliability
+        timeout: 10000, // Reduced timeout
+        maximumAge: 5 * 60 * 1000, // 5 minutes cache
       }
     );
   }, []);
+
+  // Trigger search when location or map changes
+  useEffect(() => {
+    if (map && location) {
+      fetchNearbyClinics(map, location);
+    }
+  }, [map, location]);
 
   // ADDED: function to fetch nearby doctors from backend
   function fetchNearbyClinics(
@@ -86,33 +101,36 @@ export default function MapView({ onClinicsFound }: MapViewProps) {
   }
 
 
-  if (error) {
-    return <p className="text-red-500">{error}</p>;
-  }
-
-  if (!location) {
-    return <p>Detecting your current location...</p>;
-  }
-
   return (
-    <LoadScript
-      googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}
-      libraries={["places"]}
-    >
-      <GoogleMap mapContainerStyle={containerStyle} center={location} zoom={15}
-        onLoad={(map) => fetchNearbyClinics(map, location!)}>
-        {/* User location marker */}
-        <Marker position={location} />
+    <div className="relative">
+      {isLocating && (
+        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-10 bg-white/80 px-3 py-1 rounded-full text-xs shadow-sm border">
+          Locating...
+        </div>
+      )}
+      <LoadScript
+        googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}
+        libraries={["places"]}
+      >
+        <GoogleMap
+          mapContainerStyle={containerStyle}
+          center={location}
+          zoom={15}
+          onLoad={(map) => setMap(map)}
+        >
+          {/* User location marker */}
+          <Marker position={location} />
 
-        {/* ADDED: Markers for nearby doctors */}
-        {doctors.map((doc) => (
-          <Marker
-            key={doc.id}
-            position={{ lat: doc.lat, lng: doc.lng }}
-            label={doc.name}
-          />
-        ))}
-      </GoogleMap>
-    </LoadScript>
+          {/* ADDED: Markers for nearby doctors */}
+          {doctors.map((doc) => (
+            <Marker
+              key={doc.id}
+              position={{ lat: doc.lat, lng: doc.lng }}
+              label={doc.name}
+            />
+          ))}
+        </GoogleMap>
+      </LoadScript>
+    </div>
   );
 }

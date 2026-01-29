@@ -36,42 +36,40 @@ async login(@Body() body: { email: string; password: string }) {
     email: string; 
     name?: string; 
     supabaseId: string;
-    profileImage?: string;
+    profileImage?: string; // For syncing to Doctor table later, but not for DoctorLogin
     phone?: string;
   }) {
-    console.log('Received register request:', body); // 🔍 Debug Log
+    console.log('Received register request:', body);
     const exists = await this.doctorLoginService.findBySupabaseId(body.supabaseId);
     
     if (exists) {
-      console.log('Doctor already exists, updating last login...'); // 🔍 Debug Log
-      // Update last login and any new data
+      console.log('Doctor login already exists, updating last login...');
       const updated = await this.doctorLoginService.updateDoctorLogin(exists.id, {
         name: body.name || exists.name,
-        //profileImage: body.profileImage || exists.profileImage,
-        //phone: body.phone || exists.phone,
+        phone: body.phone || exists.phone,
         lastLoginAt: new Date(),
       });
       return { message: 'Doctor login updated', doctor: updated };
     }
 
-    console.log('Creating new doctor...'); // 🔍 Debug Log
+    console.log('Creating new doctor login...');
     
-    // Check if doctor exists by email
     const existingEmail = await this.doctorLoginService.findByEmail(body.email);
     if (existingEmail) {
       console.log('Doctor with email already exists. Linking Supabase ID...');
       return this.doctorLoginService.updateDoctorLogin(existingEmail.id, { 
         supabaseId: body.supabaseId,
         name: body.name || existingEmail.name,
-        profileImage: body.profileImage,
-        phone: body.phone,
+        phone: body.phone || existingEmail.phone,
         lastLoginAt: new Date(),
       });
     }
 
-    // Create new doctor with all data including lastLoginAt
+    // Sanitize body: remove profileImage because it's not in the DoctorLogin schema
+    const { profileImage, ...loginData } = body;
+
     return this.doctorLoginService.createDoctorLogin({
-      ...body,
+      ...loginData,
       lastLoginAt: new Date(),
     });
   }

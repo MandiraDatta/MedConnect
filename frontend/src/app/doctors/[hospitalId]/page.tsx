@@ -8,6 +8,12 @@ import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { mockHospitals } from "@/lib/mock-data"
 
+export function generateStaticParams() {
+  return mockHospitals.map((hospital) => ({
+    hospitalId: hospital.id,
+  }))
+}
+
 export default function DoctorsPage() {
   const params = useParams()
   const hospitalId = params.hospitalId as string

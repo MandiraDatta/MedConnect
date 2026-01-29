@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { BACKEND_URL } from '@/lib/config';
 
 export default function SymptomCheckerPage() {
   const [symptoms, setSymptoms] = useState('');
@@ -25,7 +26,7 @@ export default function SymptomCheckerPage() {
     setResult(null);
 
     try {
-      const res = await fetch('http://localhost:3001/symptom/check', {
+      const res = await fetch(`${BACKEND_URL}/symptom/check`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ symptoms }),
@@ -169,9 +170,8 @@ export default function SymptomCheckerPage() {
               padding: '20px',
               borderRadius: '14px',
               background: result.emergency ? '#ffebee' : '#e8f5e9',
-              border: `2px solid ${
-                result.emergency ? '#d32f2f' : '#2e7d32'
-              }`,
+              border: `2px solid ${result.emergency ? '#d32f2f' : '#2e7d32'
+                }`,
             }}
           >
             <h3>Result</h3>
@@ -200,8 +200,8 @@ export default function SymptomCheckerPage() {
                     getSeverityLevel() === 'High'
                       ? '#d32f2f'
                       : getSeverityLevel() === 'Medium'
-                      ? '#fbc02d'
-                      : '#2e7d32',
+                        ? '#fbc02d'
+                        : '#2e7d32',
                 }}
               />
             </div>

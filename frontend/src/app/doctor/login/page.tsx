@@ -21,7 +21,6 @@ export default function DoctorLogin() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
-  //const BACKEND_URL = "http://localhost:3004"
 
   // ---------------------------------------
   // 🔥 Redirect if already logged in

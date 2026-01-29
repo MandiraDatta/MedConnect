@@ -1,4 +1,4 @@
-"use client"
+//"use client"
 //import { useParams } from "next/navigation"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"

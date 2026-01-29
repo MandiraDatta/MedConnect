@@ -1,5 +1,5 @@
-//"use client"
-//import { useParams } from "next/navigation"
+"use client"
+import { useParams } from "next/navigation"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import DoctorCard from "@/components/doctor-card"
@@ -8,11 +8,11 @@ import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { mockHospitals } from "@/lib/mock-data"
 
-export function generateStaticParams() {
-  return mockHospitals.map((hospital) => ({
-    hospitalId: hospital.id,
-  }))
-}
+// export function generateStaticParams() {
+//   return mockHospitals.map((hospital) => ({
+//     hospitalId: hospital.id,
+//   }))
+// }
 
 export default function DoctorsPage() {
   const params = useParams()

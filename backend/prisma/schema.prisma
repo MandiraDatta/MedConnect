@@ -32,8 +32,6 @@ model DoctorLogin {
   email        String    @unique
   supabaseId   String?   @unique
   password     String?
-  phone        String?   // 🔥 ADDED for login details
-
   lastLoginAt  DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt

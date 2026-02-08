@@ -37,7 +37,7 @@ async login(@Body() body: { email: string; password: string }) {
     name?: string; 
     supabaseId: string;
     profileImage?: string; // For syncing to Doctor table later, but not for DoctorLogin
-    phone?: string;
+    //phone?: string;
   }) {
     console.log('Received register request:', body);
     const exists = await this.doctorLoginService.findBySupabaseId(body.supabaseId);
@@ -46,7 +46,7 @@ async login(@Body() body: { email: string; password: string }) {
       console.log('Doctor login already exists, updating last login...');
       const updated = await this.doctorLoginService.updateDoctorLogin(exists.id, {
         name: body.name || exists.name,
-        phone: body.phone || exists.phone,
+        //phone: body.phone || exists.phone,
         lastLoginAt: new Date(),
       });
       return { message: 'Doctor login updated', doctor: updated };
@@ -60,7 +60,7 @@ async login(@Body() body: { email: string; password: string }) {
       return this.doctorLoginService.updateDoctorLogin(existingEmail.id, { 
         supabaseId: body.supabaseId,
         name: body.name || existingEmail.name,
-        phone: body.phone || existingEmail.phone,
+        //phone: body.phone || existingEmail.phone,
         lastLoginAt: new Date(),
       });
     }
